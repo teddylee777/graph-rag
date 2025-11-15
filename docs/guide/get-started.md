@@ -142,6 +142,31 @@ The following shows how to populate a variety of vector stores with the animal d
     shreds all keys. It may be configured to only shred those
     metadata keys used as edge targets.
 
+=== "PGVector"
+
+    ```python
+    from langchain_postgres import PGVector
+    from langchain_openai import OpenAIEmbeddings
+    from langchain_graph_retriever.transformers import ShreddingTransformer
+
+    shredder = ShreddingTransformer() # (1)!
+    connection = "postgresql+psycopg://user:password@localhost:5432/database"
+    vector_store = PGVector(
+        embeddings=OpenAIEmbeddings(),
+        collection_name="animals",
+        connection=connection,
+        use_jsonb=True,
+    )
+    vector_store.add_documents(list(shredder.transform_documents(animals)))
+    ```
+
+    1. Since PGVector doesn't index items in lists for querying, it is necessary to
+    shred metadata containing list to be queried. By default, the
+    [`ShreddingTransformer`][langchain_graph_retriever.transformers.ShreddingTransformer]
+    shreds all keys. It may be configured to only shred those
+    metadata keys used as edge targets. Note that PGVector supports nested metadata
+    through JSONB.
+
 ## Simple Traversal
 
 For our first retrieval and graph traversal, we're going to start with a single animal best
@@ -202,10 +227,24 @@ matching the query, and then traverse to other animals with the same `habitat` a
     )
     ```
 
+=== "PGVector"
+
+    ```python
+    from graph_retriever.strategies import Eager
+    from langchain_graph_retriever import GraphRetriever
+    from langchain_graph_retriever.adapters.pgvector import PGVectorAdapter
+
+    simple = GraphRetriever(
+        store = PGVectorAdapter(vector_store, shredder, {"keywords"}),
+        edges = [("habitat", "habitat"), ("origin", "origin"), ("keywords", "keywords")],
+        strategy = Eager(k=10, start_k=1, max_depth=2),
+    )
+    ```
+
 !!! note "Shredding"
 
     The above code is exactly the same for all stores, however adapters for shredded
-    stores (Chroma and Apache Cassandra) require configuration to specify which metadata
+    stores (Chroma, Apache Cassandra, and PGVector) require configuration to specify which metadata
     fields need to be rewritten when issuing queries.
 
 The above creates a graph traversing retriever that starts with the nearest animal

@@ -15,6 +15,7 @@ Adapters allow `graph-retriever` to connect to specific vector stores.
 | [OpenSearch](#opensearch)      | {{ i.y }} | {{ i.y }}   | {{ i.n }}    | {{ i.n }}       | {{ i.n }}           |
 | [Apache Cassandra](#cassandra) | {{ i.y }} | {{ i.m }}   | {{ i.y }}    | {{ i.n }}       | {{ i.n }}           |
 | [Chroma](#chroma)              | {{ i.y }} | {{ i.m }}   | {{ i.y }}    | {{ i.n }}       | {{ i.n }}           |
+| [PGVector](#pgvector)          | {{ i.y }} | {{ i.m }}   | {{ i.y }}    | {{ i.y }}       | {{ i.n }}           |
 
 __Supported__
 
@@ -69,6 +70,10 @@ Additionally, it optimizes the request for nodes connected to multiple edges int
 ### Chroma
 
 [Chroma](https://www.trychroma.com/) is supported by the [`ChromaAdapter`][langchain_graph_retriever.adapters.chroma.ChromaAdapter]. The adapter requires shredding metadata containing lists in order to use them as edges. It does not perform an optimized adjacent query.
+
+### PGVector
+
+[PGVector](https://github.com/pgvector/pgvector) is supported by the [`PGVectorAdapter`][langchain_graph_retriever.adapters.pgvector.PGVectorAdapter]. The adapter requires shredding metadata containing lists in order to use them as edges, but supports nested metadata through PostgreSQL's JSONB data type. It does not perform an optimized adjacent query.
 
 ## Implementation
 
