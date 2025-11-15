@@ -44,70 +44,26 @@ class PGVectorAdapter(ShreddedLangchainAdapter[PGVector]):
         if k == 0:
             return []
 
-        # Use the internal method to get documents with embeddings
-        # PGVector's similarity_search doesn't return embeddings by default
-        # We need to query the database directly to get embeddings
-        from sqlalchemy import select
+        # Use PGVector's internal query method to get results with embeddings
+        results = self.vector_store._PGVector__query_collection(
+            embedding=embedding,
+            k=k,
+            filter=filter,
+        )
 
         docs: list[Document] = []
-
-        try:
-            with self.vector_store._make_sync_session() as session:
-                from langchain_postgres.vectorstores import EmbeddingStore
-
-                # Build the similarity search query with embeddings
-                collection = self.vector_store.get_collection(session)
-                if not collection:
-                    return []
-
-                stmt = select(
-                    EmbeddingStore,
-                ).filter(
-                    EmbeddingStore.collection_id == collection.id
-                )
-
-                # Apply metadata filter if provided
-                if filter:
-                    for key, value in filter.items():
-                        stmt = stmt.filter(
-                            EmbeddingStore.cmetadata[key].astext == str(value)
-                        )
-
-                # Order by similarity (distance)
-                stmt = stmt.order_by(
-                    EmbeddingStore.embedding.cosine_distance(embedding)
-                ).limit(k)
-
-                results = session.execute(stmt).scalars().all()
-
-                for result in results:
-                    doc = Document(
-                        id=str(result.id),
-                        page_content=result.document,
-                        metadata={
-                            METADATA_EMBEDDING_KEY: result.embedding,
-                            **(result.cmetadata or {}),
-                        },
-                    )
-                    docs.append(doc)
-
-        except Exception:
-            # Fallback to standard similarity search without embeddings
-            # then fetch embeddings separately
-            search_results = self.vector_store.similarity_search_by_vector(
-                embedding=embedding,
-                k=k,
-                filter=filter,
-                **kwargs,
+        for result in results:
+            # Extract embedding from the result
+            # PGVector returns results with EmbeddingStore objects
+            doc = Document(
+                id=str(result.EmbeddingStore.id),
+                page_content=result.EmbeddingStore.document,
+                metadata={
+                    METADATA_EMBEDDING_KEY: result.EmbeddingStore.embedding,
+                    **(result.EmbeddingStore.cmetadata or {}),
+                },
             )
-
-            for doc in search_results:
-                if doc.id:
-                    full_docs = self._get([doc.id], filter=None)
-                    if full_docs:
-                        docs.append(full_docs[0])
-                else:
-                    docs.append(doc)
+            docs.append(doc)
 
         return docs
 
@@ -115,50 +71,39 @@ class PGVectorAdapter(ShreddedLangchainAdapter[PGVector]):
     def _get(
         self, ids: Sequence[str], filter: dict[str, Any] | None = None, **kwargs: Any
     ) -> list[Document]:
-        # PGVector stores documents in a table, we need to query by ID
         from sqlalchemy import select
 
         docs: list[Document] = []
 
-        # Access the underlying collection/table
-        store = self.vector_store
+        with self.vector_store._make_sync_session() as session:
+            collection = self.vector_store.get_collection(session)
 
-        # Build query to get documents by IDs with embeddings
-        for doc_id in ids:
-            try:
-                # Query the store's collection for the document
-                # PGVector uses sync operations by default
-                with store._make_sync_session() as session:
-                    from langchain_postgres.vectorstores import EmbeddingStore
+            # Build query to get documents by IDs with embeddings
+            filter_by = [self.vector_store.EmbeddingStore.collection_id == collection.uuid]
 
-                    stmt = (
-                        select(EmbeddingStore)
-                        .where(EmbeddingStore.id == doc_id)
+            # Add ID filter
+            filter_by.append(self.vector_store.EmbeddingStore.id.in_(ids))
+
+            # Add metadata filters if provided
+            if filter:
+                for key, value in filter.items():
+                    filter_by.append(
+                        self.vector_store.EmbeddingStore.cmetadata[key].astext == str(value)
                     )
 
-                    if filter:
-                        # Apply metadata filters if provided
-                        for key, value in filter.items():
-                            stmt = stmt.where(
-                                EmbeddingStore.cmetadata[key].astext == str(value)
-                            )
+            stmt = select(self.vector_store.EmbeddingStore).filter(*filter_by)
 
-                    result = session.execute(stmt).scalar_one_or_none()
+            results = session.execute(stmt).scalars().all()
 
-                    if result:
-                        # Convert the result to a Document with embedding
-                        doc = Document(
-                            id=str(result.id),
-                            page_content=result.document,
-                            metadata={
-                                METADATA_EMBEDDING_KEY: result.embedding,
-                                **(result.cmetadata or {}),
-                            },
-                        )
-                        docs.append(doc)
-            except Exception:
-                # If there's an error fetching a document, skip it
-                # This matches the behavior of other adapters
-                continue
+            for result in results:
+                doc = Document(
+                    id=str(result.id),
+                    page_content=result.document,
+                    metadata={
+                        METADATA_EMBEDDING_KEY: result.embedding,
+                        **(result.cmetadata or {}),
+                    },
+                )
+                docs.append(doc)
 
         return docs
