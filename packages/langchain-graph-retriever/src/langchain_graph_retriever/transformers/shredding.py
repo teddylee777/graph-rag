@@ -111,12 +111,21 @@ class ShreddingTransformer(BaseDocumentTransformer):
                 ):
                     original_key, original_value = split_key
                     value = json.loads(original_value)
+
+                    # 키가 이미 존재하는지 확인
                     if original_key not in new_doc.metadata:
                         new_doc.metadata[original_key] = []
+                    elif not isinstance(new_doc.metadata[original_key], list):
+                        # 이미 존재하지만 리스트가 아닌 경우, 리스트로 변환
+                        existing_value = new_doc.metadata[original_key]
+                        new_doc.metadata[original_key] = [existing_value]
+
                     new_doc.metadata[original_key].append(value)
                 else:
                     # Retain non-shredded metadata as is
-                    new_doc.metadata[key] = value
+                    # shredded_keys에 속하지 않는 키만 추가
+                    if key not in shredded_keys:
+                        new_doc.metadata[key] = value
 
             restored_docs.append(new_doc)
 
