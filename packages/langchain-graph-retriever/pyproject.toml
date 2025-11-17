@@ -69,12 +69,14 @@ langchain-astradb = "langchain_astradb"
 langchain-chroma = "langchain_chroma"
 langchain-community = "langchain_community"
 langchain-core = "langchain_core"
+langchain-postgres = "langchain_postgres"
 langchain-tests = "langchain_tests"
 mypy = "mypy"
 networkx = "networkx"
 networkx-stubs = "networkx_stubs"
 numpy = "numpy"
 opensearch-py = "opensearch_py"
+psycopg = "psycopg"
 pydantic = "pydantic"
 pytest = "pytest"
 pytest-asyncio = "pytest_asyncio"
@@ -119,6 +121,10 @@ keybert = [
 opensearch = [
    "langchain-community>=0.3.14",
    "opensearch-py>=2.8.0",
+]
+pgvector = [
+    "langchain-postgres>=0.0.12",
+    "psycopg[binary]>=3.1.0",
 ]
 spacy = [
     "spacy>=3.8.4",

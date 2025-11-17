@@ -22,8 +22,8 @@ def event_loop():
     loop.close()
 
 
-ALL_STORES = ["mem", "opensearch", "astra", "cassandra", "chroma"]
-TESTCONTAINER_STORES = ["opensearch", "cassandra"]
+ALL_STORES = ["mem", "opensearch", "astra", "cassandra", "chroma", "pgvector"]
+TESTCONTAINER_STORES = ["opensearch", "cassandra", "pgvector"]
 
 
 def pytest_addoption(parser: Parser):

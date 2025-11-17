@@ -8,7 +8,7 @@ It works seamlessly with LangChain's retriever framework and supports various gr
 - **Vector Search**: Perform similarity searches using vector embeddings.
 - **Graph Traversal**: Apply traversal strategies such as breadth-first (Eager) or Maximal Marginal Relevance (MMR) to explore document relationships.
 - **Customizable Strategies**: Easily extend and configure traversal strategies to meet your specific use case.
-- **Multiple Adapters**: Support for various vector stores, including AstraDB, Cassandra, Chroma, OpenSearch, and in-memory storage.
+- **Multiple Adapters**: Support for various vector stores, including AstraDB, Cassandra, Chroma, OpenSearch, PGVector, and in-memory storage.
 - **Synchronous and Asynchronous Retrieval**: Supports both sync and async workflows for flexibility in different applications.
 
 ## Installation
